@@ -16,3 +16,23 @@ def test_list_projects():
 
     # Assert that the JSON response body is a list with 1 item.
     assert len(response.json()) == 3
+
+
+def test_list_projects_by_slug():
+    response = client.get("/projects", params={"slug": "api-v2"})
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["slug"] == "api-v2"
+
+
+def test_get_project():
+    response = client.get("/projects/1")
+    assert response.status_code == 200
+    assert response.json()["name"] == "Frontend Redesign"
+
+
+def test_get_project_not_found():
+    response = client.get("/projects/999")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Project not found"
