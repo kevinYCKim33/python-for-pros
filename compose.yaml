@@ -1,0 +1,24 @@
+# open docker desktop or open -a Docker
+# run via docker compose up -d
+# -d detached, runs in background
+services:
+  db:
+    image: postgres:17-alpine # base image of postgres
+    ports:
+      - "5432:5432" # (port-on-my-machine):(port-inside-container)
+    environment: # environment-variables
+      POSTGRES_DB: release_tracker
+      POSTGRES_USER: release_tracker
+      POSTGRES_PASSWORD: release_tracker
+    # needs to be named healthcheck
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U release_tracker -d release_tracker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # volume-name:path/to/where/official/postgres/image/stores/its/actual/database/files
+
+volumes: # persists across container removal/recreation (e.g. `docker compose down`); wiped only by `down -v`
+  postgres_data:
+    # use default values
