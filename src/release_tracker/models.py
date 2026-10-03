@@ -14,10 +14,7 @@ def utc_now() -> datetime:
 
 
 # also reusable for stripping whitespace
-ProjectName = Annotated[
-    str,
-    StringConstraints(strip_whitespace=True, min_length=2),
-]
+ProjectName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=2)]
 
 
 # Why this in 1 step...
