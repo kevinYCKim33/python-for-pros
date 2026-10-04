@@ -36,7 +36,7 @@ def client_fixture(session: Session) -> Generator[TestClient]:
 @pytest.fixture()
 def sample_project_id(client: TestClient) -> int:
     response = client.post(
-        "/projects",
+        "/projects/",
         json={
             "name": "Release Platform",
             "description": "Coordinates planning for the production release.",
