@@ -49,3 +49,15 @@ def test_delete_project(client: TestClient, sample_project_id: int):
 
     response = client.get(f"/projects/{sample_project_id}")
     assert response.status_code == 404
+
+
+def test_create_duplicate_project_fails(client: TestClient, sample_project_id: int):
+    response = client.post(
+        "/projects/",
+        json={
+            "name": "Release Platform",  # Same name as sample_project_id; recall name: ProjectName = Field(unique=True)
+            "description": "Another description",
+        },
+    )
+    assert response.status_code == 409
+    assert response.json() == {"detail": "Data conflict occurred (e.g., duplicate entry)."}

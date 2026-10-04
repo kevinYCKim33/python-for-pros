@@ -1,4 +1,6 @@
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, Request, Response, status
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 
 from . import crud
 from .dependencies import ProjectDep, SessionDep
@@ -8,6 +10,19 @@ app = FastAPI(
     title="Release Tracker API",
     description="An API for tracking project milestones and developer tasks.",
 )
+
+
+# We state that Project names must be unique
+# any time there's an integrity error upon trying to commit to the
+# backend, this exception handler kicks in
+# by default it returns 500, but it should really be 400
+# and let users know to pick a unique name for the project
+@app.exception_handler(IntegrityError)
+def handle_integrity_error(request: Request, exc: IntegrityError):
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"detail": "Data conflict occurred (e.g., duplicate entry)."},
+    )
 
 
 @app.get("/")
