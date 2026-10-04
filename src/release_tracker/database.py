@@ -16,4 +16,4 @@ def get_engine() -> Engine:
 # get db engine, and get me back a session
 def get_session() -> Generator[Session]:
     with Session(get_engine()) as session:
-        yield session
+        yield session  # yield back to the route handler

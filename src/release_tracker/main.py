@@ -1,18 +1,13 @@
-from typing import Annotated
-
-from fastapi import Depends, FastAPI, HTTPException, Response, status
-from sqlmodel import Session
+from fastapi import FastAPI, HTTPException, Response, status
 
 from . import crud
-from .database import get_session
+from .dependencies import SessionDep
 from .models import ProjectCreate, ProjectRead, ProjectUpdate
 
 app = FastAPI(
     title="Release Tracker API",
     description="An API for tracking project milestones and developer tasks.",
 )
-
-SessionDep = Annotated[Session, Depends(get_session)]
 
 
 @app.get("/")
@@ -25,6 +20,7 @@ def read_root() -> dict[str, str]:
 
 @app.get("/projects", response_model=list[ProjectRead])
 def list_projects(session: SessionDep):
+    # our DB session is automatically injected and managed
     return crud.list_projects(session)
 
 
