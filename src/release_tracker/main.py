@@ -1,8 +1,16 @@
+import logging
+
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
+from .config import configure_logging, get_settings
 from .routers import projects  # some subtle namespacing going on
+
+# could probably inject level from .env
+configure_logging(debug=get_settings().debug)
+logger = logging.getLogger(__name__)
+
 
 app = FastAPI(
     title="Release Tracker API",
@@ -29,6 +37,7 @@ def handle_integrity_error(request: Request, exc: IntegrityError):
 
 @app.get("/")
 def read_root() -> dict[str, str]:
+    logger.info("Hello World!!!")
     return {
         "app": "Release Tracker API",
         "docs": "/docs",

@@ -20,6 +20,7 @@ def list_projects(session: SessionDep):
 # it sees the project_id matches the {project_id}
 # it also sees get_project_or_404 has a Depends(get_session)
 # so it executes that first
+# almost like a before_action in Rails
 def get_project(project: ProjectDep):
     return project
 
