@@ -5,6 +5,8 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
+from release_tracker.routers import tasks
+
 from .config import configure_logging, get_settings
 from .routers import projects  # some subtle namespacing going on
 
@@ -37,6 +39,7 @@ async def log_requests(request: Request, call_next):
 
 # let's use the new router
 app.include_router(projects.router)
+app.include_router(tasks.router)
 
 
 # We state that Project names must be unique
