@@ -86,6 +86,7 @@ def list_tasks(
         statement = statement.where(Task.status == task_status)
     if task_priority is not None:
         statement = statement.where(Task.priority == task_priority)
+    # lowkey kind of complex query since there's no is_overdue column in SQL
     if overdue_only:
         statement = statement.where(
             Task.due_date != None,  # noqa: E711
