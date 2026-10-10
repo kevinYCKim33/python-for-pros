@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Response, status
 
 from .. import crud
-from ..dependencies import ProjectDep, SessionDep
+from ..dependencies import CurrentUserDep, ProjectDep, SessionDep
 from ..models import ProjectCreate, ProjectRead, ProjectUpdate
 
 # tags: used in docs view to group displays
@@ -25,11 +25,9 @@ def get_project(project: ProjectDep):
     return project
 
 
+# any route that needs POSTs that need auth, tack on CurrentUserDep
 @router.post("", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)
-def create_project(
-    payload: ProjectCreate,
-    session: SessionDep,
-):
+def create_project(payload: ProjectCreate, session: SessionDep, current_user: CurrentUserDep):
     return crud.create_project(session, payload)
 
 

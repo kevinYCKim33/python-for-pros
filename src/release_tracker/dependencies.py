@@ -5,12 +5,15 @@ from sqlmodel import Session
 
 from . import crud
 from .database import get_session
-from .models import Project, Task
+from .models import Project, Task, User
+from .security import get_current_user
 
 # Create a reusable dependency type
 # magic line that anchors to the database
 # how Python is able to talk to SQL
 SessionDep = Annotated[Session, Depends(get_session)]
+
+CurrentUserDep = Annotated[User, get_current_user]
 
 
 def get_project_or_404(project_id: int, session: SessionDep) -> Project:
