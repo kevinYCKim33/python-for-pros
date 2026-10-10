@@ -113,6 +113,17 @@ class Task(TaskBase, table=True):
 
     project: Project = Relationship(back_populates="tasks")
 
+    # task.project_name     # with @property
+    # task.project_name()   # what you'd need without it
+    # task.project.name   # the long way (if you didn't have helper at all)
+    @property
+    def project_name(self) -> str:
+        return self.project.name
+
+    @property
+    def project_slug(self) -> str:
+        return self.project.slug
+
 
 # what back_populates buys me
 # task = Task(title="Write docs")
@@ -138,3 +149,5 @@ class TaskUpdate(SQLModel):
 class TaskRead(TaskBase):
     id: int
     project_id: int
+    project_name: str
+    project_slug: str
