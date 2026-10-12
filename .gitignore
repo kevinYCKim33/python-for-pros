@@ -29,3 +29,7 @@ env/
 Thumbs.db
 
 .env
+
+# Coverage
+.coverage
+htmlcov/

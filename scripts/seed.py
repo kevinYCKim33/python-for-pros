@@ -1,6 +1,8 @@
+import argparse
 from datetime import UTC, date, datetime, timedelta
 
-from sqlmodel import Session, delete
+from sqlalchemy.exc import OperationalError, ProgrammingError
+from sqlmodel import Session, delete, select
 
 from release_tracker import crud
 from release_tracker.database import get_engine
@@ -10,15 +12,22 @@ SEED_USER_EMAIL = "demo@release-tracker.local"
 SEED_USER_PASSWORD = "demo-password"
 
 
-def seed() -> None:
+def seed(*, reset: bool = False) -> None:
     today = datetime.now(UTC).date()
     # 1. Create a Session using the engine
     with Session(get_engine()) as session:
-        # 1. clear db when running seed script
-        session.exec(delete(Task))
-        session.exec(delete(Project))
-        session.exec(delete(User))
-        session.commit()
+        # 1. clear db only when asked to (uv run scripts/seed.py --reset)
+        if reset:
+            session.exec(delete(Task))
+            session.exec(delete(Project))
+            session.exec(delete(User))
+            session.commit()
+            print("Cleared existing project, task, and user data.")
+
+        # without --reset, running seed twice would hit the unique constraints, so bail early
+        if session.exec(select(Project.id).limit(1)).first() is not None:
+            print("Sample project data already exists. Use --reset to reload it.")
+            return
 
         # 2. Instantiate User
         crud.create_user(
@@ -77,7 +86,25 @@ def seed() -> None:
         session.commit()
 
         print(f"Loaded sample data for 3 projects and {len(tasks)} tasks.")
+        print(f"Demo user: {SEED_USER_EMAIL} / {SEED_USER_PASSWORD}")
 
 
 if __name__ == "__main__":
-    seed()
+    parser = argparse.ArgumentParser(description="Load sample data for Release Tracker.")
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="Delete existing project, task, and user records before loading fresh sample data.",
+    )
+    arguments = parser.parse_args()
+    # turn the two most common failures into a readable message instead of a stack trace
+    try:
+        seed(reset=arguments.reset)
+    except ProgrammingError as exc:  # tables don't exist yet
+        raise SystemExit(
+            "Database tables are missing. Run `uv run alembic upgrade head` first."
+        ) from exc
+    except OperationalError as exc:  # can't reach Postgres at all
+        raise SystemExit(
+            "Could not connect to the database. Is the Postgres container running?"
+        ) from exc
