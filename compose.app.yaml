@@ -1,0 +1,52 @@
+services:
+  web:
+    build: . # refers to Dockerfile in same directory
+    environment:
+      DATABASE_URL: postgresql+psycopg://release_tracker:release_tracker@db:5432/release_tracker
+      DEBUG: "true"
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY before running compose.app.yaml}
+    # fast api run runs on 8000
+    ports:
+      - "8000:8000"
+    # compose won't create web until db is healthy
+    depends_on:
+      db:
+        condition: service_healthy
+    # alembic upgrade head to make database migration up to date
+    command: ["sh", "-c", "alembic upgrade head && fastapi run"]
+    # runs every 10s to see if website is still up
+    # if not, docker marks as "unhealthy"
+    # and you can choose what to do with it on Docker Swarm /k8s or AWS ECS or w/e
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      # grace period: failure in this window doesn't count, success counts as healthy
+      start_period: 30s
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: release_tracker
+      POSTGRES_USER: release_tracker
+      POSTGRES_PASSWORD: release_tracker
+    # first health check to run
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U release_tracker -d release_tracker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

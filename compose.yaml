@@ -1,22 +1,12 @@
+# Why have two compose??
+# answer here: https://app.notion.com/p/FEM-Python-for-Professional-Developers-3e169ddc73658052b098dd4ac2f40395?source=copy_link#3f769ddc73658029b5cbd0bf2a9359f0
+
 # open docker desktop or open -a Docker
 # run via docker compose up -d
 # -d detached, runs in background
 services:
-  web:
-    build: . # refers to Dockerfile in same directory
-    environment:
-      DATABASE_URL: postgresql+psycopg://release_tracker:release_tracker@db:5432/release_tracker
-      DEBUG: "true"
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY before running compose.app.yaml}
-    ports:
-      - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-    # alembic upgrade head to make database migration up to date
-    command: ["sh", "-c", "alembic upgrade head && fastapi run"]
   db:
-    image: postgres:17-alpine # base image of postgres
+    image: postgres:17-alpine
     ports:
       - "5432:5432" # (port-on-my-machine):(port-inside-container)
     environment: # environment-variables
@@ -30,7 +20,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - postgres_data:/var/lib/postgresql/data # volume-name:path/to/where/official/postgres/image/stores/its/actual/database/files
+      - postgres_data:/var/lib/postgresql/data
 
 volumes: # persists across container removal/recreation (e.g. `docker compose down`); wiped only by `down -v`
   postgres_data:

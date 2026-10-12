@@ -13,7 +13,7 @@ jobs:
     services:
       # only used by the "Apply migrations" step; tests use in-memory SQLite
       postgres:
-        image: postgres:17-alpine
+        image: postgres:17-alpine # spins up a Docker container with Postgres
         env:
           POSTGRES_DB: release_tracker
           POSTGRES_USER: release_tracker
