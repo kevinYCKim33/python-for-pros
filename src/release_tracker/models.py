@@ -44,7 +44,9 @@ class Project(ProjectBase, table=True):
     slug: str = Field(unique=True)  # don't want 2 proj with same slug
 
     # also need to have back_populates
-    tasks: list[Task] = Relationship(back_populates="project")
+    # cascade_delete=True: deleting a project in Python also deletes its tasks
+    # (pairs with ondelete="CASCADE" on Task.project_id for the DB side)
+    tasks: list[Task] = Relationship(back_populates="project", cascade_delete=True)
 
     created_at: datetime = Field(
         default_factory=utc_now,  # function to call for every NEW row
@@ -109,9 +111,20 @@ class Task(TaskBase, table=True):
     # index = True
     # like if you ask give me all tasks from project 5
     # it will be indexed that project 5 has tasks 1, 4, and 7 w/o looking it all up
-    project_id: int = Field(foreign_key="projects.id", index=True)
+    # ondelete="CASCADE": if the project row is deleted in SQL, Postgres deletes its tasks too
+    project_id: int = Field(foreign_key="projects.id", ondelete="CASCADE", index=True)
 
     project: Project = Relationship(back_populates="tasks")
+
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
+    # onupdate: SQLAlchemy calls utc_now again every time the row is UPDATEd
+    updated_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=utc_now),
+    )
 
     # task.project_name     # with @property
     # task.project_name()   # what you'd need without it
@@ -151,6 +164,8 @@ class TaskRead(TaskBase):
     project_id: int
     project_name: str
     project_slug: str
+    created_at: datetime
+    updated_at: datetime
 
 
 # --- User ---
