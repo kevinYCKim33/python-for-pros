@@ -6,6 +6,11 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
+# how tests handle environment variables
+# needs to run before any module that calls get_settings() is called
+# otherwise Pydantic validation error at import time
+# and pytest never starts
+# a CI environment that supplies its own JWT_SECRET_KEY overrides test default
 os.environ.setdefault(
     "JWT_SECRET_KEY",
     "test-secret-key-for-pytest-only-32-bytes",
