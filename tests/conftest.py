@@ -1,12 +1,22 @@
-from collections.abc import Generator
+import os
+from collections.abc import Callable, Generator
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
+os.environ.setdefault(
+    "JWT_SECRET_KEY",
+    "test-secret-key-for-pytest-only-32-bytes",
+)
+
+from release_tracker import crud
+from release_tracker.config import get_settings
 from release_tracker.database import get_engine, get_session
 from release_tracker.main import app
+from release_tracker.models import User
+from release_tracker.security import create_access_token
 
 # conftest.py: loaded automatically before pytest runs tests
 
@@ -35,7 +45,40 @@ def client_fixture(session: Session) -> Generator[TestClient]:
     client = TestClient(app)
     yield client
     app.dependency_overrides.clear()
-    get_engine.cache_clear()  # clear cache btw tests
+    get_settings.cache_clear()
+    get_engine.cache_clear()
+
+
+@pytest.fixture()
+def make_user(session: Session) -> Callable[..., User]:
+    def factory(
+        *,
+        email: str = "testuser@example.com",
+        password: str = "testpassword",
+        is_active: bool = True,
+    ) -> User:
+        return crud.create_user(
+            session,
+            email=email,
+            password=password,
+            is_active=is_active,
+        )
+
+    return factory
+
+
+@pytest.fixture()
+def auth_headers(make_user: Callable[..., User]) -> dict[str, str]:
+    user = make_user(email="editor@example.com")
+    token = create_access_token(subject=str(user.id))
+    return {"Authorization": f"Bearer {token}"}
+
+
+# so it sees auth_headers above and executes that code
+@pytest.fixture()
+def auth_client(client: TestClient, auth_headers: dict[str, str]) -> TestClient:
+    client.headers.update(auth_headers)
+    return client
 
 
 # now anytime tests need sample_project_id
@@ -43,8 +86,8 @@ def client_fixture(session: Session) -> Generator[TestClient]:
 # and get the id
 # reduces tons of repetitive code
 @pytest.fixture()
-def sample_project_id(client: TestClient) -> int:
-    response = client.post(
+def sample_project_id(auth_client: TestClient) -> int:
+    response = auth_client.post(
         "/projects/",
         json={
             "name": "Release Platform",
@@ -56,8 +99,8 @@ def sample_project_id(client: TestClient) -> int:
 
 
 @pytest.fixture()
-def sample_task_id(client: TestClient, sample_project_id: int) -> int:
-    response = client.post(
+def sample_task_id(auth_client: TestClient, sample_project_id: int) -> int:
+    response = auth_client.post(
         f"/projects/{sample_project_id}/tasks",
         json={
             "title": "Wire up the dashboard",

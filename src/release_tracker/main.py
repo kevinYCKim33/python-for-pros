@@ -1,7 +1,8 @@
 import logging
 import time
+from collections.abc import Awaitable, Callable
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
@@ -21,7 +22,9 @@ app = FastAPI(
 
 
 @app.middleware("http")
-async def log_requests(request: Request, call_next):
+async def log_requests(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     start_time = time.perf_counter()
     response = await call_next(request)
     process_time = (time.perf_counter() - start_time) * 1000
@@ -52,7 +55,7 @@ app.include_router(tasks.router)
 # any duplicate errors (user emails, project names)
 # get handled here
 @app.exception_handler(IntegrityError)
-def handle_integrity_error(request: Request, exc: IntegrityError):
+def handle_integrity_error(request: Request, exc: IntegrityError) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
         content={"detail": "Data conflict occurred (e.g., duplicate entry)."},

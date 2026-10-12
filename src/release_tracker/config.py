@@ -17,7 +17,8 @@ LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s %(message)s"
 # where most stuff in here goes linked to .env file
 # jwt_secret_key => .env's JWT_SECRET_KEY
 class Settings(BaseSettings):
-    # 1. database_url => checks to see if DATABASE_URL exists in environment variable (i.e. export DATABASE_URL)
+    # 1. database_url => checks to see if DATABASE_URL exists in environment variable
+    # (i.e. export DATABASE_URL)
     # 2. if not, check to see if it exists in .env as DATABASE_URL
     # 3. if not, go with DEFAULT_DATABASE_URL
     database_url: str = DEFAULT_DATABASE_URL
