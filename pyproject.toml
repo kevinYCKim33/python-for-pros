@@ -34,6 +34,11 @@ dev = [
     "ruff>=0.17.0", 
 ]
 
+[tool.pytest.ini_options]
+# -q: quieter output; importlib: import test files without needing tests/__init__.py
+addopts = "-q --import-mode=importlib"
+testpaths = ["tests"]
+
 [tool.mypy]
 python_version = "3.14"
 warn_unused_ignores = true

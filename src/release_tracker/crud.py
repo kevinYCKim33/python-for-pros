@@ -4,8 +4,6 @@ from pydantic import EmailStr
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
-from release_tracker.security import get_password_hash
-
 from .models import (
     Project,
     ProjectCreate,
@@ -17,9 +15,12 @@ from .models import (
     TaskUpdate,
     User,
 )
+from .security import get_password_hash
 
 
 def slugify(value: str) -> str:
+    # Note: slugs must be unique, but we're not checking that constraint here.
+    # Keep only lowercase letters, digits, and spaces, then join words with hyphens.
     cleaned = "".join(c for c in value.lower() if c.isalnum() or c == " ")
     return "-".join(cleaned.split()) or "project"
 
@@ -104,8 +105,10 @@ def list_tasks(
 def get_task(session: Session, task_id: int) -> Task | None:
     statement = (
         select(Task)
-        # almost a pointless selectinload / eager loading
-        # .options(selectinload(Task.project))  # type: ignore[arg-type]
+        # I used to think this eager load was almost pointless for a single task...
+        # but TaskRead reads task.project_name / project_slug, so the project gets
+        # loaded anyway; selectinload just does it up front instead of lazily
+        .options(selectinload(Task.project))  # type: ignore[arg-type]
         .where(Task.id == task_id)
     )
     return session.exec(statement).first()

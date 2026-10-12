@@ -1,8 +1,12 @@
+import logging
+
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
-from sqlmodel import select
+from sqlalchemy import text
 
 from release_tracker.dependencies import SessionDep
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["meta"])
 
@@ -11,9 +15,12 @@ router = APIRouter(tags=["meta"])
 def healthcheck(session: SessionDep) -> dict[str, str] | JSONResponse:
     try:
         # essentially just asking: am I connected to the database?
-        session.exec(select(1))
+        # text("SELECT 1") is plain SQL, no ORM involved
+        session.execute(text("SELECT 1"))
+        logger.debug("Healthcheck requested")
         return {"status": "healthy"}
     except Exception:
+        logger.warning("Healthcheck failed: database unreachable")
         return JSONResponse(
             {"status": "unhealthy"},
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

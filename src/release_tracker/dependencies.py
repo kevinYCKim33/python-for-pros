@@ -20,7 +20,9 @@ CurrentUserDep = Annotated[User, Depends(get_current_user)]
 def get_project_or_404(project_id: int, session: SessionDep) -> Project:
     project = crud.get_project(session, project_id)
     if project is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found."
+        )
     return project
 
 
@@ -34,7 +36,9 @@ ProjectDep = Annotated[Project, Depends(get_project_or_404)]
 def get_task_or_404(task_id: int, session: SessionDep) -> Task:
     task = crud.get_task(session, task_id)
     if task is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Task {task_id} not found."
+        )
     return task
 
 
