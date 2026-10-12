@@ -1,8 +1,11 @@
 from collections.abc import Callable
+from datetime import timedelta
 
+import pytest
 from fastapi.testclient import TestClient
 
 from release_tracker.models import User
+from release_tracker.security import create_access_token
 
 
 def test_login_returns_token(client: TestClient, make_user: Callable[..., User]) -> None:
@@ -110,3 +113,44 @@ def test_register_then_login(client: TestClient) -> None:
     )
     assert response.status_code == 200
     assert "access_token" in response.json()
+
+
+def test_login_failure_sends_www_authenticate_header(client: TestClient) -> None:
+    response = client.post(
+        "/auth/token",
+        data={"username": "nobody@example.com", "password": "anything"},
+    )
+    assert response.status_code == 401
+    assert response.headers["www-authenticate"] == "Bearer"
+
+
+def test_expired_token_rejected(client: TestClient, make_user: Callable[..., User]) -> None:
+    user = make_user(email="expired@example.com")
+    # Create a token that expired 1 hour ago
+    token = create_access_token(subject=str(user.id), expires_delta=timedelta(minutes=-60))
+
+    response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 401
+
+
+# parametrize: same test body runs once per (method, endpoint) pair
+@pytest.mark.parametrize(
+    ("method", "endpoint"),
+    [
+        ("POST", "/projects/"),
+        ("PATCH", "/projects/1"),
+        ("DELETE", "/projects/1"),
+        ("POST", "/projects/1/tasks"),
+        ("PATCH", "/tasks/1"),
+        ("DELETE", "/tasks/1"),
+    ],
+)
+def test_write_endpoints_require_authentication(
+    client: TestClient, method: str, endpoint: str
+) -> None:
+    response = client.request(
+        method,
+        endpoint,
+        json={"name": "Unauthorized Project", "title": "Unauthorized Task"},
+    )
+    assert response.status_code == 401
