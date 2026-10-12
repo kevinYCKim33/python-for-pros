@@ -2,6 +2,19 @@
 # run via docker compose up -d
 # -d detached, runs in background
 services:
+  web:
+    build: . # refers to Dockerfile in same directory
+    environment:
+      DATABASE_URL: postgresql+psycopg://release_tracker:release_tracker@db:5432/release_tracker
+      DEBUG: "true"
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY before running compose.app.yaml}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    # alembic upgrade head to make database migration up to date
+    command: ["sh", "-c", "alembic upgrade head && fastapi run"]
   db:
     image: postgres:17-alpine # base image of postgres
     ports:

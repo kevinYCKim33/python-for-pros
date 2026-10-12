@@ -1,0 +1,12 @@
+.git
+# most important
+# don't bring over local virtual Python 3.14 over to dockerland
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+.mypy_cache
+.ruff_cache
+htmlcov
+.env
