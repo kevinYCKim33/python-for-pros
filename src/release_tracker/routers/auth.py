@@ -10,6 +10,8 @@ from release_tracker.security import create_access_token, verify_password
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+# NOTE: A production deployment should add rate limiting to this endpoint
+# to guard against brute-force password attacks.
 @router.post("/token")
 def login_for_access_token(
     session: SessionDep,

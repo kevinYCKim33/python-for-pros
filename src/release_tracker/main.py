@@ -1,23 +1,39 @@
 import logging
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable
+from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request, Response, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import IntegrityError
 
-from release_tracker.routers import auth, health, projects, tasks
-
+from . import __version__
 from .config import configure_logging, get_settings
+from .routers import auth_router, health_router, projects_router, tasks_router
 
-# could probably inject level from .env
-configure_logging(debug=get_settings().debug)
+APP_NAME = "Release Tracker API"
 logger = logging.getLogger(__name__)
+# folder holding the dashboard's index.html / app.js / styles.css
+static_dir = Path(__file__).resolve().parent / "static"
+
+
+# lifespan: code before `yield` runs once on startup, code after runs once on shutdown
+# replaces calling configure_logging() at import time, so just importing main
+# (e.g. in tests) no longer has the side effect of reconfiguring logging
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+    # could probably inject level from .env
+    configure_logging(debug=get_settings().debug)
+    yield
 
 
 app = FastAPI(
-    title="Release Tracker API",
+    title=APP_NAME,
+    version=__version__,  # shows up in /docs
     description="An API for tracking project milestones and developer tasks.",
+    lifespan=lifespan,
 )
 
 
@@ -39,11 +55,14 @@ async def log_requests(
     return response
 
 
+# serves /app/static/app.js, /app/static/styles.css etc. straight off disk
+app.mount("/app/static", StaticFiles(directory=static_dir), name="app-static")
+
 # let's use the new router
-app.include_router(auth.router)
-app.include_router(projects.router)
-app.include_router(tasks.router)
-app.include_router(health.router)
+app.include_router(auth_router)
+app.include_router(projects_router)
+app.include_router(tasks_router)
+app.include_router(health_router)
 
 
 # We state that Project names must be unique
@@ -57,16 +76,31 @@ app.include_router(health.router)
 # get handled here
 @app.exception_handler(IntegrityError)
 def handle_integrity_error(request: Request, exc: IntegrityError) -> JSONResponse:
+    logger.warning(
+        "IntegrityError handled method=%s path=%s",
+        request.method,
+        request.url.path,
+    )
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
         content={"detail": "Data conflict occurred (e.g., duplicate entry)."},
     )
 
 
-@app.get("/")
+# demo dashboard; include_in_schema=False keeps it out of /docs
+@app.get("/app", include_in_schema=False)
+@app.get("/app/", include_in_schema=False)
+def frontend_dashboard() -> FileResponse:
+    logger.info("Serving dashboard")
+    return FileResponse(static_dir / "index.html")
+
+
+@app.get("/", tags=["meta"])
 def read_root() -> dict[str, str]:
-    logger.info("Hello World!!!")
+    logger.debug("Serving root metadata")
     return {
-        "app": "Release Tracker API",
+        "app": APP_NAME,
+        "version": __version__,
         "docs": "/docs",
+        "health": "/health",
     }

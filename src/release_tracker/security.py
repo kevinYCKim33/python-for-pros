@@ -15,6 +15,8 @@ from . import models
 from .config import get_settings
 from .database import get_session
 
+# For demo, Tokens expire after 60 minutes with no refresh flow.
+# In a production app, you'd add this to your environment settings instead.
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 JWT_ALGORITHM = "HS256"
 

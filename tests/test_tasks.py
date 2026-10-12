@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 def test_get_task_not_found(client: TestClient) -> None:
     response = client.get("/tasks/9999")
     assert response.status_code == 404
-    assert response.json() == {"detail": "Task not found"}
+    assert response.json() == {"detail": "Task 9999 not found."}
 
 
 # asks for fixture client which asks for fixture session
@@ -96,4 +96,4 @@ def test_create_task_for_missing_project_returns_404(auth_client: TestClient) ->
         json={"title": "Orphan"},
     )
     assert response.status_code == 404
-    assert response.json() == {"detail": "Project not found"}
+    assert response.json() == {"detail": "Project 9999 not found."}

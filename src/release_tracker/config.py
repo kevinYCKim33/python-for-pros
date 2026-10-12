@@ -36,7 +36,15 @@ class Settings(BaseSettings):
 
 def configure_logging(*, debug: bool) -> None:
     level = logging.DEBUG if debug else logging.INFO
-    logging.basicConfig(level=level, format=LOG_FORMAT)
+    root_logger = logging.getLogger()
+
+    # basicConfig is a no-op if handlers already exist (e.g. uvicorn/pytest set them up),
+    # so in that case just adjust the level instead of silently doing nothing
+    if not root_logger.handlers:
+        logging.basicConfig(level=level, format=LOG_FORMAT)
+        return
+
+    root_logger.setLevel(level)
 
 
 # ensures we build the settings object once and reuse it across the application.

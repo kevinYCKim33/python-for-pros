@@ -1,17 +1,23 @@
+import logging
+
 from fastapi import APIRouter, Response, status
 
 from .. import crud
 from ..dependencies import CurrentUserDep, ProjectDep, SessionDep
 from ..models import Project, ProjectCreate, ProjectRead, ProjectUpdate
 
+logger = logging.getLogger(__name__)
+
 # tags: used in docs view to group displays
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
-@router.get("", response_model=list[ProjectRead])
+@router.get("/", response_model=list[ProjectRead])
 def list_projects(session: SessionDep) -> list[Project]:
     # our DB session is automatically injected and managed
-    return crud.list_projects(session)
+    projects = crud.list_projects(session)
+    logger.info("Listed projects count=%s", len(projects))
+    return projects
 
 
 @router.get("/{project_id}", response_model=ProjectRead)
@@ -30,6 +36,7 @@ def get_project(project: ProjectDep) -> Project:
 def create_project(
     payload: ProjectCreate, session: SessionDep, current_user: CurrentUserDep
 ) -> Project:
+    logger.info("Creating project name=%s user_id=%s", payload.name, current_user.id)
     return crud.create_project(session, payload)
 
 
@@ -40,6 +47,7 @@ def update_project(
     payload: ProjectUpdate,
     session: SessionDep,
 ) -> Project:
+    logger.info("Updating project project_id=%s user_id=%s", project.id, current_user.id)
     return crud.update_project(session, project, payload)
 
 
@@ -47,5 +55,6 @@ def update_project(
 def delete_project(
     current_user: CurrentUserDep, project: ProjectDep, session: SessionDep
 ) -> Response:
+    logger.info("Deleting project project_id=%s user_id=%s", project.id, current_user.id)
     crud.delete_project(session, project)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
