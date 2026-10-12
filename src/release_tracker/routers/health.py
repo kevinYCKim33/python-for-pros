@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["meta"])
 
 
+# k8s call this endpoint to see whether container is ready to receive traffic
 @router.get("/health", response_model=None, status_code=status.HTTP_200_OK)
 def healthcheck(session: SessionDep) -> dict[str, str] | JSONResponse:
     try:

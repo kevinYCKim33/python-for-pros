@@ -16,17 +16,22 @@ from .routers import auth_router, health_router, projects_router, tasks_router
 APP_NAME = "Release Tracker API"
 logger = logging.getLogger(__name__)
 # folder holding the dashboard's index.html / app.js / styles.css
+# .resolve() converts to absolute path
+#  instead of just saying ./static,
+# building the path from __file__ finds the folder no matter where you start the app.
 static_dir = Path(__file__).resolve().parent / "static"
 
 
-# lifespan: code before `yield` runs once on startup, code after runs once on shutdown
-# replaces calling configure_logging() at import time, so just importing main
-# (e.g. in tests) no longer has the side effect of reconfiguring logging
+# lifespan (could've been named anything):
+# FastAPI's startup/shutdown hook.
+# Code before yield runs once when the app boots;
+# code after yield (none here) runs once on shutdown.
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
-    # could probably inject level from .env
+    # before firing app, set up which level of logging you want from .env
     configure_logging(debug=get_settings().debug)
-    yield
+    yield  # fastapi is up
+    # could add cleanup here
 
 
 app = FastAPI(
@@ -56,6 +61,8 @@ async def log_requests(
 
 
 # serves /app/static/app.js, /app/static/styles.css etc. straight off disk
+# http://localhost:8000/app/static/index.html
+# ^ valid route!
 app.mount("/app/static", StaticFiles(directory=static_dir), name="app-static")
 
 # let's use the new router

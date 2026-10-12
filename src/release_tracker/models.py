@@ -117,10 +117,11 @@ class Task(TaskBase, table=True):
     project: Project = Relationship(back_populates="tasks")
 
     created_at: datetime = Field(
-        default_factory=utc_now,
+        default_factory=utc_now,  # executes utc_now if created_at not passed in
+        # confused about this timezone thing
         sa_column=Column(DateTime(timezone=True), nullable=False),
     )
-    # onupdate: SQLAlchemy calls utc_now again every time the row is UPDATEd
+    # onupdate: SQLAlchemy calls utc_now again every time the row is updated
     updated_at: datetime = Field(
         default_factory=utc_now,
         sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=utc_now),
@@ -164,6 +165,7 @@ class TaskRead(TaskBase):
     project_id: int
     project_name: str
     project_slug: str
+    # allows client to sort tasks by both factors in the FE
     created_at: datetime
     updated_at: datetime
 
