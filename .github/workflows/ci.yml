@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  # blank pull_request: runs on when a PR is opened, synchronized, or reopened
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest # start off a blank Ubuntu VM
+
+    services:
+      # only used by the "Apply migrations" step; tests use in-memory SQLite
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: release_tracker
+          POSTGRES_USER: release_tracker
+          POSTGRES_PASSWORD: release_tracker
+        ports:
+          - 5432:5432
+        # once container reports healthy, does GitHub start actions/checkout and rest
+        options: >-
+          --health-cmd "pg_isready -U release_tracker -d release_tracker"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # essentially the .env of the github ci yaml
+    env:
+      DATABASE_URL: postgresql+psycopg://release_tracker:release_tracker@localhost:5432/release_tracker
+      JWT_SECRET_KEY: ci-secret-key-32-bytes-or-longer-1234
+
+    # essentially shell scripts
+    steps:
+      # the "web" portion of docker compose runs directly on the VM
+      - uses: actions/checkout@v4 # puts copy of code onto the CI Machine
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.11.6" # matches the Dockerfile's pinned uv; local, prod, ci all run off same version
+
+      - name: Set up Python
+        run: uv python install 3.14
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Lint
+        run: uv run ruff check --no-cache .
+
+      - name: Format check
+        run: uv run ruff format --check .
+
+      - name: Type check
+        run: uv run mypy .
+
+      # a separate check to see that your set of migrations are working
+      # tests use sqlite, so tests don't need this
+      - name: Apply migrations
+        run: uv run alembic upgrade head
+
+      - name: Test with coverage
+        run: |
+          uv run coverage run -m pytest
+          uv run coverage report
