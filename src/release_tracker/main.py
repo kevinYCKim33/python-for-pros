@@ -5,10 +5,9 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
-from release_tracker.routers import tasks
+from release_tracker.routers import auth, projects, tasks
 
 from .config import configure_logging, get_settings
-from .routers import projects  # some subtle namespacing going on
 
 # could probably inject level from .env
 configure_logging(debug=get_settings().debug)
@@ -38,6 +37,7 @@ async def log_requests(request: Request, call_next):
 
 
 # let's use the new router
+app.include_router(auth.router)
 app.include_router(projects.router)
 app.include_router(tasks.router)
 
@@ -47,6 +47,10 @@ app.include_router(tasks.router)
 # backend, this exception handler kicks in
 # by default it returns 500, but it should really be 400
 # and let users know to pick a unique name for the project
+
+
+# any duplicate errors (user emails, project names)
+# get handled here
 @app.exception_handler(IntegrityError)
 def handle_integrity_error(request: Request, exc: IntegrityError):
     return JSONResponse(

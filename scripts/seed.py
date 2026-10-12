@@ -2,8 +2,12 @@ from datetime import UTC, date, datetime, timedelta
 
 from sqlmodel import Session, delete
 
+from release_tracker import crud
 from release_tracker.database import get_engine
-from release_tracker.models import Project, Task, TaskPriority, TaskStatus
+from release_tracker.models import Project, Task, TaskPriority, TaskStatus, User
+
+SEED_USER_EMAIL = "demo@release-tracker.local"
+SEED_USER_PASSWORD = "demo-password"
 
 
 def seed() -> None:
@@ -13,8 +17,17 @@ def seed() -> None:
         # 1. clear db when running seed script
         session.exec(delete(Task))
         session.exec(delete(Project))
+        session.exec(delete(User))
         session.commit()
-        # 2. Instantiate three Project objects
+
+        # 2. Instantiate User
+        crud.create_user(
+            session,
+            email=SEED_USER_EMAIL,
+            password=SEED_USER_PASSWORD,
+        )
+
+        # 2a. Instantiate three Project objects
         frontend = Project(name="Frontend Redesign", slug="frontend-redesign")
         api = Project(name="API v2", slug="api-v2")
         db_migration = Project(name="Database Migration", slug="database-migration")

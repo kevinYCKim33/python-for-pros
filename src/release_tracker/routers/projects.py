@@ -26,13 +26,14 @@ def get_project(project: ProjectDep):
 
 
 # any route that needs POSTs that need auth, tack on CurrentUserDep
-@router.post("", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)
 def create_project(payload: ProjectCreate, session: SessionDep, current_user: CurrentUserDep):
     return crud.create_project(session, payload)
 
 
 @router.patch("/{project_id}", response_model=ProjectRead)
 def update_project(
+    current_user: CurrentUserDep,
     project: ProjectDep,
     payload: ProjectUpdate,
     session: SessionDep,
@@ -41,6 +42,6 @@ def update_project(
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_project(project: ProjectDep, session: SessionDep):
+def delete_project(current_user: CurrentUserDep, project: ProjectDep, session: SessionDep):
     crud.delete_project(session, project)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

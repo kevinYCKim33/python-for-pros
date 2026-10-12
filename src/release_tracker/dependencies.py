@@ -12,8 +12,9 @@ from .security import get_current_user
 # magic line that anchors to the database
 # how Python is able to talk to SQL
 SessionDep = Annotated[Session, Depends(get_session)]
-
-CurrentUserDep = Annotated[User, get_current_user]
+# make sure get_current_user is wrapped in Depends!
+# otherwise "Authorize" button won't show up
+CurrentUserDep = Annotated[User, Depends(get_current_user)]
 
 
 def get_project_or_404(project_id: int, session: SessionDep) -> Project:

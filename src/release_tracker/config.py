@@ -24,13 +24,13 @@ class Settings(BaseSettings):
 
     debug: bool = False
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
-
     # SecretStr gets logged as *****
     # also of note, no default value stated
     # so if .env is missing JWT_SECRET_KEY, it just flat out won't start
     # intentional!
     jwt_secret_key: SecretStr = Field(min_length=32)
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
 def configure_logging(*, debug: bool) -> None:
